@@ -21,8 +21,6 @@ gitlab_values_yaml: |
 
   certmanager-issuer:
     email: root@nailloux.lan
-  certmanager:
-    install: false
 
   gitlab:
   #   gitlab-shell:
