@@ -8,6 +8,11 @@
   
   tasks:
 
+  - name: Create gitlab NS
+    kubernetes.core.k8s:
+      kind: Namespace
+      name: gitlab
+
   - name: Configure TLS secret for the ingress
     kubernetes.core.k8s:
       resource_definition: "{{ gitlab_ingress_tls }}"
