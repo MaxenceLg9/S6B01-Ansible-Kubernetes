@@ -16,7 +16,7 @@
   - name: Patching local-path-storage as default storage class
     kubernetes.core.k8s:
       state: patched
-      kind: storageclass
+      kind: StorageClass
       name: local-path
       definition:
         metadata:

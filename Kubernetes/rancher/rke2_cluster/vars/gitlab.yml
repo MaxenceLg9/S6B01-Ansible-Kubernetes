@@ -1,6 +1,10 @@
-gitlab_external_ip: 192.168.122.4
+gitlab_external_ip: 10.0.1.4
 gitlab_values_yaml: |
   global:
+    common:
+      certificates:
+        customCAs:
+          - secret: gitlab-crt
     hosts:
       domain: nailloux.gitlab.com  # Your domain
       gitlab:
@@ -42,7 +46,6 @@ gitlab_runner_values_yaml: |
 
   imagePullPolicy: IfNotPresent
   useTini: false
-  unregisterRunners: true
   terminationGracePeriodSeconds: 3600
 
   concurrent: 10
@@ -56,15 +59,17 @@ gitlab_runner_values_yaml: |
   gitlabUrl: https://nailloux.gitlab.com  # Use your Proxy/GitLab URL
   #secret: gitlab-runner-token             # The secret we created in Step 2
 
+  unregisterRunners: false
+
   rbac:
     create: true                     # Allows the runner to create job Pods
 
 
-  certsSecretName: gitlab-runner-crt
+  certsSecretName: gitlab-crt
 
   ## Ensure the Manager has permission to read the mounted secret
   securityContext:
-    fsGroup: 65533
+    fsGroup: 65533 
 
   runners:
     config: |
@@ -74,7 +79,7 @@ gitlab_runner_values_yaml: |
         clone_url = "https://nailloux.gitlab.com"
         
         [runners.kubernetes]
-          namespace = "gitlab-runner"
+          namespace = "gitlab"
           image = "debian:latest"
           privileged = true
 

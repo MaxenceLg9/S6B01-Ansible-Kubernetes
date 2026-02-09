@@ -4,7 +4,6 @@ image:
 
 imagePullPolicy: IfNotPresent
 useTini: false
-unregisterRunners: true
 terminationGracePeriodSeconds: 3600
 
 concurrent: 10
@@ -18,11 +17,13 @@ logLevel: debug
 gitlabUrl: https://nailloux.gitlab.com  # Use your Proxy/GitLab URL
 #secret: gitlab-runner-token             # The secret we created in Step 2
 
+unregisterRunners: false
+
 rbac:
   create: true                     # Allows the runner to create job Pods
 
 
-certsSecretName: gitlab-runner-crt
+certsSecretName: gitlab-crt
 
 ## Ensure the Manager has permission to read the mounted secret
 securityContext:
@@ -36,7 +37,7 @@ runners:
       clone_url = "https://nailloux.gitlab.com"
       
       [runners.kubernetes]
-        namespace = "gitlab-runner"
+        namespace = "gitlab"
         image = "debian:latest"
         privileged = true
 
@@ -82,4 +83,4 @@ runners:
         value = "0"
       [[runners.kubernetes.env]]
         name = "DOCKER_CERT_PATH"
-        value = ""
+        value = ""⏎    

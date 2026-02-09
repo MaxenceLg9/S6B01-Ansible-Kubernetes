@@ -1,17 +1,16 @@
 #############################
-# Getting credential from Rancher node
 - name: "Get credentials"
   hosts: k3s_cluster
   vars_files:
     - "../../global_vars.yml"
-  become: true
 
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
 
   tasks:
 
-  - name: "Get API token"
+  # Get a Cookie to access to the Web Rancher API
+  - name: "Get JWT Token"
     ansible.builtin.uri:
       body:
         description: "UI session"
@@ -27,6 +26,7 @@
     delay: 10
     register: rancher_cookie
 
+  # Get the raw JSON data that contains the clusterID
   - name: "Get cluster ID"
     ansible.builtin.uri:
       url: "https://{{ rancher_hostname }}/v3/clusters"
@@ -36,12 +36,14 @@
         Cookie: "{{ rancher_cookie.cookies_string }}"
     register: "rancher_cluster_data"
 
+  # Get clusterID from raw JSON data, useful to get the token to register nodes
   - name: Extract Cluster ID from Cluster Data
     set_fact:
       cluster_id: "{{ rancher_cluster_data.json.data | selectattr('name', 'equalto', 'project') | map(attribute='id') | first }}"
 
   - debug: msg="{{ cluster_id }}"
   
+  # Get Raw JSON data that contains the token
   - name: "Get registration command"
     ansible.builtin.uri:
       url: "https://{{ rancher_hostname }}/v3/clusterregistrationtokens"
@@ -51,14 +53,16 @@
       validate_certs: false
     register: "rancher_response_register"
 
-  - debug: msg="{{ rancher_response_register.json }}"
+  - debug: msg="{{ rancher_response_register.json.data }}"
 
-  - name: Extract Cluster ID 
+  # Get clusterID from raw json data
+  - name: Extract Cluster ID
     set_fact:
       token: "{{ rancher_response_register.json.data | selectattr('clusterId', 'equalto', cluster_id ) | map(attribute='token') | first }}"
 
   - debug: msg="{{ token }}"
   
+  # Output the Rancher CA cert from kubectl secret
   - name: Get Rancher CA certificate from Secret
     kubernetes.core.k8s_info:
       kind: Secret
@@ -66,43 +70,51 @@
       namespace: cattle-system
     register: rancher_secret
 
+  # Write CA cert to ca.crt
   - name: Save CA certificate to /tmp/ca.crt
     ansible.builtin.copy:
-      # We access the 'ca.crt' key inside the 'data' dictionary of the first resource found
       content: "{{ rancher_secret.resources[0].data['ca.crt'] | b64decode }}"
       dest: /tmp/ca.crt
       mode: '0644'
 
-  - name: "Get CheckSum token"
+  # Get Checksum of the CA
+  - name: "Get CA Cert checksum"
     ansible.builtin.stat:
       checksum_algorithm: sha256
       get_checksum: true
       path: /tmp/ca.crt
     register: ca_checksum
 
+  # Debug it
   - debug: msg="{{ ca_checksum.stat.checksum }}"
 
 #############################
-# Another task: working on the nodes
-- name: "Register workers nodes"
-  hosts: worker
+- name: "Register node"
+  hosts: workers
   vars_files:
     - "../../global_vars.yml"
-    - "../vars/worker.yml"
-    
+    - "../vars/workers.yml"
+  environment:
+    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+  
   tasks:
-  - name: Create RKE2 config directory
-    ansible.builtin.file:
-      path: /etc/rancher/rke2
-      state: directory
-      mode: '0755'
 
+  # Check if system is using systemd-resolved
   - name: Check current resolv.conf status
     ansible.builtin.command: grep -q "127.0.0.53" /etc/resolv.conf
     register: dns_check
     failed_when: false
     changed_when: false
+  
+  # Create directory if using systemd-resolved
+  - name: Create RKE2 config directory
+    ansible.builtin.file:
+      path: /etc/rancher/rke2
+      state: directory
+      mode: '0755'
+    when: dns_check.rc == 0
     
+  # To avoid DNS issue if using systemd-resolved
   - name: Write RKE2 configuration file
     ansible.builtin.copy:
       dest: /etc/rancher/rke2/config.yaml
@@ -116,6 +128,17 @@
       mode: '0644'
     when: dns_check.rc == 0
 
+  - name: 5. Extract the Registration Command
+    set_fact:
+      token: "{{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }}"
+
+  - name: 5. Extract the Checksum
+    set_fact:
+      checksum: "{{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }}"
+
+  - debug: msg="curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --worker --node-name master"
+
+  # Downloading agent executable
   - name: "Downloading agent"
     ansible.builtin.get_url:
       dest: "/tmp/rancher.sh"
@@ -123,29 +146,11 @@
       mode: '0755'
       force: true
       validate_certs: false
+  
+  - debug: msg="/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }} --ca-checksum {{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }} --worker --node-name {{ rancher_worker_node_1_name }}"
 
-#############################
-- name: "Register first worker node"
-  hosts: worker1
-  vars_files:
-    - "../../global_vars.yml"
-    - "../vars/worker.yml"
-    
-  tasks:
+  # Deploying RKE2-Server
   - name: "Execute script to register the node"
     ansible.builtin.shell:
       executable: "/usr/bin/bash"
-      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }} --ca-checksum {{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }} --worker {{ rancher_worker_node_1_name }}"
-
-#############################
-- name: "Register second worker node"
-  hosts: worker2
-  vars_files:
-    - "../../global_vars.yml"
-    - "../vars/worker.yml"
-
-  tasks:
-  - name: "Execute script to register the node"
-    ansible.builtin.shell:
-      executable: "/usr/bin/bash"
-      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }} --ca-checksum {{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }} --worker {{ rancher_worker_node_2_name }}"
+      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }} --ca-checksum {{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }} --worker --node-name {{ rancher_worker_node_2_name }}"
