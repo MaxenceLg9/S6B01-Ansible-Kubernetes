@@ -8,6 +8,20 @@
   
   tasks:
 
+  - name: Configure TLS secret for the ingress
+    kubernetes.core.k8s:
+      resource_definition: "{{ gitlab_ingress_tls }}"
+      name: gitlab-ingress.tls
+      kind: Secret
+      namespace: gitlab
+
+  - name: Configure Cert secret to avoid the Runner refusing the auto signed cert from gitlab
+    kubernetes.core.k8s:
+      resource_definition: "{{ gitlab_crt }}"
+      name: gitlab-crt
+      kind: Secret
+      namespace: gitlab
+
   - name: Add stable chart repo for Gitlab
     kubernetes.core.helm_repository:
       name: gitlab
@@ -71,6 +85,6 @@
       release_namespace: gitlab
       timeout: 600s
       values:
-        runnerToken: "{{ gitlab_runner_token }}"
+        runnerRegistrationToken: "{{ gitlab_runner_token }}"
       values_files:
         - /tmp/gitlab_runner_values.yml
