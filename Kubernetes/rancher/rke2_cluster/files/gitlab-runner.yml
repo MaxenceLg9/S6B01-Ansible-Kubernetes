@@ -83,4 +83,4 @@ runners:
         value = "0"
       [[runners.kubernetes.env]]
         name = "DOCKER_CERT_PATH"
-        value = ""⏎    
+        value = ""
