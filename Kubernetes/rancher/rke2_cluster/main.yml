@@ -1,9 +1,9 @@
 ---
-- name: "Registering master node"
-  import_playbook: "playbooks/master.yml"
-- name: "Registering workers nodes"
-  import_playbook: "playbooks/workers.yml"
-- name: Local-Path Deployment to store files locally
-  import_playbook: "playbooks/local_path.yml"
+# - name: "Registering master node"
+#   import_playbook: "playbooks/master.yml"
+# - name: "Registering workers nodes"
+#   import_playbook: "playbooks/workers.yml"
+# - name: Local-Path Deployment to store files locally
+#   import_playbook: "playbooks/local_path.yml"
 - name: "Deploy Gitlab and Gitlab Runner workloads"
   import_playbook: "playbooks/gitlab.yml"
