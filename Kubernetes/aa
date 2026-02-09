@@ -19,3 +19,6 @@ kubectl create secret generic gitlab-crt \
 
 kubectl run cert-test --image=alpine --restart=Never -it --rm -- \
   /bin/sh -c "apk add --no-cache openssl && openssl s_client -connect nailloux.gitlab.com:443 -CAfile /dev/null"
+
+------------
+kubectl get ingress -n gitlab -o jsonpath='{.items[*].spec.tls[*].secretName}'

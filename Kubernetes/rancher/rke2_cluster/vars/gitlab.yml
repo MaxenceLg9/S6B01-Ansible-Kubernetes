@@ -30,8 +30,7 @@ gitlab_values_yaml: |
     webservice:
       ingress:
         tls:
-          secretName:
-            gitlab-crt
+          secretName: gitlab-crt
       # This solves your previous "unmapped file" error
       deployment:
         extraVolumes: |
