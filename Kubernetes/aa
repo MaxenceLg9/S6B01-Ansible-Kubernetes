@@ -1,0 +1,21 @@
+openssl s_client -connect nailloux.gitlab.com:443 </dev/null 2>/dev/null \
+| openssl x509 -fingerprint -sha256 -noout
+
+
+-------------
+kubectl get secret gitlab-crt -o jsonpath='{.data.nailloux\.gitlab\.com\.crt}' | base64 -d \
+| openssl x509 -fingerprint -sha256 -noout
+
+----------
+# Fetch the full chain
+openssl s_client -showcerts -connect nailloux.gitlab.com:443 </dev/null > full_chain.crt
+
+# Update your secret with the full chain
+kubectl create secret generic gitlab-crt \
+  --from-file=nailloux.gitlab.com.crt=full_chain.crt \
+  -n <your-namespace> --dry-run=client -o yaml | kubectl apply -f -
+
+--------------
+
+kubectl run cert-test --image=alpine --restart=Never -it --rm -- \
+  /bin/sh -c "apk add --no-cache openssl && openssl s_client -connect nailloux.gitlab.com:443 -CAfile /dev/null"
