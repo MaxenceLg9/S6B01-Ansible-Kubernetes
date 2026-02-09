@@ -1,0 +1,83 @@
+#############################
+- name: "Installing Gitlab with Helm"
+  hosts: master
+  vars_files:
+    - "../vars/gitlab.yml"
+  environment:
+    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+  
+  tasks:
+  
+  - name: "Install requirements"
+    ansible.builtin.apt:
+      name: "python3-kubernetes"
+      state: present
+
+  - name: Add stable chart repo for Gitlab
+    kubernetes.core.helm_repository:
+      name: gitlab
+      repo_url: https://charts.gitlab.io/
+  
+  
+  # Deploy Gitlab
+  - name: Deploy latest version of Gitlab chart
+    kubernetes.core.helm:
+      name: gitlab
+      chart_ref: gitlab/gitlab
+      release_namespace: gitlab
+      create_namespace: true
+      timeout: 600s
+      values:
+        "{{ gitlab_values_yaml | from_yaml }}"
+      # values_files:
+        # - /tmp/gitlab_values.yml
+  
+  # Get password
+  - name: Get GitLab initial root password
+    kubernetes.core.k8s_info:
+      kind: Secret
+      name: "gitlab-gitlab-initial-root-password" # Adjust name if your release isn't named 'gitlab'
+      namespace: gitlab
+    register: gitlab_password_secret
+
+  - name: Decode and store password
+    ansible.builtin.set_fact:
+      root_password: "{{ gitlab_password_secret.resources[0].data.password | b64decode }}"
+
+  - name: Display the password
+    ansible.builtin.debug:
+      msg: "The initial root password is: {{ root_password }}"
+  
+  - name: Get GitLab Runner Registration Token
+    kubernetes.core.k8s_info:
+      kind: Secret
+      name: gitlab-gitlab-runner-secret
+      namespace: gitlab
+    register: runner_token_secret
+
+  # - debug: msg="{{ runner_token_secret }}"
+
+  - name: Decode Token
+    set_fact:
+      gitlab_runner_token: "{{ runner_token_secret.resources[0].data['runner-registration-token'] | b64decode }}"
+
+  - debug: msg="{{ gitlab_runner_token }}"
+
+  - name: Copy values file to remote server
+    ansible.builtin.copy:
+      src: ../files/gitlab-runner.yml
+      dest: /tmp/gitlab_runner_values.yml
+      mode: '0644'
+
+  # Deploy Gitlab
+  - name: Deploy latest version of Gitlab Runner chart
+    kubernetes.core.helm:
+      name: gitlab-runner
+      chart_ref: gitlab/gitlab-runner
+      release_namespace: gitlab-runner
+      create_namespace: true
+      timeout: 600s
+      values:
+        runnerToken: "{{ gitlab_runner_token }}"
+      values_files:
+        - /tmp/gitlab_runner_values.yml

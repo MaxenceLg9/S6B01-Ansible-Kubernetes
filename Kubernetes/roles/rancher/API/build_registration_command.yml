@@ -1,0 +1,20 @@
+  - name: Get Rancher CA certificate from Secret
+    kubernetes.core.k8s_info:
+      kind: Secret
+      name: tls-rancher-ingress
+      namespace: cattle-system
+    register: rancher_secret
+
+  - name: Save CA certificate to /tmp/ca.crt
+    ansible.builtin.copy:
+      # We access the 'ca.crt' key inside the 'data' dictionary of the first resource found
+      content: "{{ rancher_secret.resources[0].data['ca.crt'] | b64decode }}"
+      dest: /tmp/ca.crt
+      mode: '0644'
+
+  - name: "Get CheckSum token"
+    ansible.builtin.stat:
+      checksum_algorithm: sha256
+      get_checksum: true
+      path: /tmp/ca.crt
+    register: ca_checksum

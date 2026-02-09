@@ -1,0 +1,15 @@
+unbound_rancher_domain: |
+  server:
+    local-zone: "rancher." static
+    local-zone: "nailloux.gitlab.com." redirect
+    local-zone: "registry.com." static
+
+    local-data: "dns.rancher. IN A 10.0.1.2"
+    local-data: "rancher.rancher. IN A 10.0.1.13"
+    local-data: "master.rancher. IN A 10.0.1.4"
+    local-data: "worker.rancher. IN A 10.0.1.5"
+    local-data: "gitlab.rancher. IN A 10.0.1.6"
+  #	local-data: "nailloux.gitlab.com. IN CNAME gitlab.rancher."
+    local-data: "nailloux.gitlab.com. IN A 10.0.1.4"
+  #	local-data: "nailloux.registry.com. IN CNAME gitlab.rancher."
+    local-data: "nailloux.registry.com. IN A 10.0.1.4"

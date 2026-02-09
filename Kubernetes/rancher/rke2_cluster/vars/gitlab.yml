@@ -1,0 +1,123 @@
+gitlab_external_ip: 192.168.122.4
+gitlab_values_yaml: |
+  global:
+    hosts:
+      domain: nailloux.gitlab.com  # Your domain
+      gitlab:
+        name: nailloux.gitlab.com
+      externalIP: {{ gitlab_external_ip }}
+      edition: ce
+    ingress:
+      configureCertmanager: true
+  # If you want to use your existing external PostgreSQL/Redis, configure here.
+  # Otherwise, it will install them inside the cluster.
+
+  certmanager-issuer:
+    email: root@nailloux.lan
+
+  # gitlab:
+  #   gitlab-shell:
+  #     service:
+  #       type: LoadBalancer
+  #       loadBalancerIP: 10.0.1.8
+    webservice:
+      # This solves your previous "unmapped file" error
+      deployment:
+        extraVolumes: |
+          - name: dshm
+            emptyDir:
+              medium: Memory
+        extraVolumeMounts: |
+          - name: dshm
+            mount_path: /dev/shm
+      resources:
+        requests:
+          memory: 4Gi
+        limits:
+          memory: 8Gi
+gitlab_runner_values_yaml: |
+  image:
+    registry: registry.gitlab.com
+    image: gitlab-org/gitlab-runner
+
+  imagePullPolicy: IfNotPresent
+  useTini: false
+  unregisterRunners: true
+  terminationGracePeriodSeconds: 3600
+
+  concurrent: 10
+
+  shutdown_timeout: 0
+
+  checkInterval: 3
+
+  logLevel: debug
+
+  gitlabUrl: https://nailloux.gitlab.com  # Use your Proxy/GitLab URL
+  #secret: gitlab-runner-token             # The secret we created in Step 2
+
+  rbac:
+    create: true                     # Allows the runner to create job Pods
+
+
+  certsSecretName: gitlab-runner-crt
+
+  ## Ensure the Manager has permission to read the mounted secret
+  securityContext:
+    fsGroup: 65533
+
+  runners:
+    config: |
+      [[runners]]
+        # This path is where the Helm chart automatically mounts 'certsSecretName'
+        tls-ca-file = "/home/gitlab-runner/.gitlab-runner/certs/nailloux.gitlab.com.crt"
+        clone_url = "https://nailloux.gitlab.com"
+        
+        [runners.kubernetes]
+          namespace = "gitlab-runner"
+          image = "debian:latest"
+          privileged = true
+
+          # Request more memory for the build pod
+          memory_limit = "4Gi"
+          memory_request = "2Gi"
+          # CPU can also affect build speed/stability
+          cpu_limit = "2"
+          cpu_request = "1"
+          
+          # If the error persists, increase the helper memory too
+          helper_memory_limit = "1Gi"
+          
+          # Injects the CA into the build pod's trust store
+          ca_certificates_injection = true
+
+          # --- MOUNT FOR THE BUILD CONTAINER ---
+          # [[runners.kubernetes.volumes.secret]]
+          #   name = "gitlab-runner-crt"
+          #   mount_path = "/etc/ssl/certs"
+          #   read_only = true
+          #   # 420 is octal 0644 (readable by all)
+          #   [runners.kubernetes.volumes.secret.items]
+          #     "nailloux.gitlab.com.crt" = "420"
+
+          #   [[runners.kubernetes.volumes.empty_dir]]
+          #     name = "docker-certs"
+          #     mount_path = "/certs/client"
+          #     medium = "Memory"
+
+        # 3. Force Git to use this specific file
+        [[runners.kubernetes.env]]
+          name = "GIT_SSL_CAINFO"
+          value = "/etc/ssl/certs/nailloux.gitlab.com.crt"
+        [[runners.kubernetes.env]]
+          name = "DOCKER_HOST"
+          value = "tcp://docker:2375"
+        [[runners.kubernetes.env]]
+          name = "DOCKER_TLS_CERTDIR"
+          value = ""
+        [[runners.kubernetes.env]]
+          name = "DOCKER_TLS_VERIFY"
+          value = "0"
+        [[runners.kubernetes.env]]
+          name = "DOCKER_CERT_PATH"
+          value = ""

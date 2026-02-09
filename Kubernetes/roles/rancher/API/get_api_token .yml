@@ -1,0 +1,14 @@
+  - name: "Get API token"
+    ansible.builtin.uri:
+      body:
+        description: "UI session"
+        responseType: "cookie"
+        username: admin
+        password: oscar
+      body_format: "json"
+      method: POST
+      url: https://rancher.rancher/v3-public/localProviders/local?action=login
+      validate_certs: false
+
+    register: rancher_cookie
+  - debug: msg="{{ rancher_cookie.cookies['R_SESS'] }}"

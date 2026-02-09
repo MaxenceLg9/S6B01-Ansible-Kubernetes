@@ -1,0 +1,24 @@
+#############################
+- name: "Deploying local path provider"
+  hosts: master
+  vars_files:
+    - "../vars/local_path.yml"
+  environment:
+    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+  
+  tasks:
+
+  - name: Applying local-path-storage manifest
+    kubernetes.core.k8s:
+      src: https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+      state: present
+  
+  - name: Patching local-path-storage as default storage class
+    kubernetes.core.k8s:
+      state: patched
+      kind: storageclass
+      name: local-path
+      definition:
+        metadata:
+          annotations:
+            storageclass.kubernetes.io/is-default-class: "true"

@@ -1,0 +1,164 @@
+\documentclass{report}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage[french]{babel}
+\usepackage{titlesec}
+\usepackage[a4paper]{geometry}
+\usepackage{listings}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{babel}
+\usepackage{stix}
+\usepackage{minted}
+\usepackage{fontspec}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{titling}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{tikz}
+\usepackage{changepage}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{amsmath, amssymb}
+
+\setmainfont{Calibri}
+
+
+
+\setlist[itemize]{label=\large\textbullet}
+
+
+\definecolor{azure}{rgb}{0.2, 0.7, 1.0}
+\definecolor{bggray}{gray}{0.95}
+
+\setlength{\parindent}{0pt}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=purple,
+	filecolor=magenta,      
+	urlcolor=blue,
+	pdfborder={0 0 1}
+}
+
+\titleformat{\chapter}[block]
+{\normalfont\LARGE\bfseries} % Style: large bold text
+{\thechapter}                % Keep chapter number (remove if unwanted)
+{1em}                        % Spacing between number and title
+{}     
+
+\urlstyle{same}
+
+\geometry{width=18cm}
+\geometry{a4paper}
+
+\lstset{
+	basicstyle=\ttfamily\small, % typewriter font
+	keywordstyle=\color{blue}\bfseries, % keywords
+	commentstyle=\color{green!50!black}\itshape, % comments
+	stringstyle=\color{red}, % strings
+	showstringspaces=false,
+	numbers=none, % line numbers on the left
+	numberstyle=\tiny\color{gray},
+	backgroundcolor=\color{bggray},
+	breaklines=true,
+	frame=none,
+	tabsize=4
+}
+
+\lstdefinelanguage{Rust}{
+    keywords={fn, let, mut, if, else, match, impl, struct, enum, use, pub},
+    sensitive=true,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+}
+
+\newenvironment{terminal}[1]{%
+	\Verbatim[frame=none, numbers=none,label={#1}, breaklines, breakanywhere,tabsize=4,breaksymbol=, breakanywheresymbolpre=,backgroundcolor=bggray]%
+}{%
+	\endVerbatim
+}
+
+\renewcommand{\thechapter}{\Roman{chapter}}
+\renewcommand{\thesection}{\thechapter.\Alph{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\thesubsection.\alph{subsubsection}}
+
+
+\pretitle{%
+	\begin{center}
+		\LARGE
+		\includegraphics[width=6cm,height=2cm]{../../../../../../../Format/logo-UT-site.png}\\[\bigskipamount]
+	}
+	\posttitle{\end{center}}
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{3} 
+
+\title{\Huge{\bfseries S6.B.01\\SAE\\Ansible}}
+\date{\today}
+\author{Maxence Lagourgue}
+
+\begin{document}
+	
+	\maketitle
+	\tableofcontents
+	
+	\chapter{Introduction}
+	
+	As part of the penultimate phase of the project realised for the 3thd Year, we have to deploy our previous infrastructure made in phase 4 with Ansible, to improve fast deployment and then high availability.
+	
+	The main components we have to deploy are:
+	\begin{enumerate}
+	\item k3s cluster
+	\item Rancher through helm
+	\item Create RKE2 cluster with workers and master node
+	\item Create deployment / secrets / volumes / etc... with kubectl
+	\end{enumerate}
+	
+	\chapter{Requirements}
+	
+	To be able to deploy Kubernetes artefacts, we firstly have to install some modules and roles dedicated for these tasks.
+	
+	\begin{itemize}
+	\item ansible-galaxy collection install kubernetes.core
+	\item ansible-galaxy role install lablabs.rke2
+	\end{itemize}
+	
+	We also have to configure the users on the machines to be able to connect through SSH without typing a password, and to be able to use sudo without password too.
+	
+	On each machine we have to add an user, install ssh and modify the sudoers file.
+	\begin{lstlisting}[language=Bash,caption={}]
+	adduser sisyphe
+	apt install ssh
+	echo "sisyphe ALL=(ALL:ALL) NOPASSWD: ALL >> /etc/sudoers
+	\end{lstlisting}
+	
+	We can now copy the public key to the host machine.
+	\begin{lstlisting}[language=Bash,caption={}]
+	ssh-copy-id -i  SSH/sisyphe_key.pub sisyphe@10.0.1.13
+	\end{lstlisting}
+	
+	\chapter{Issues}
+	
+	During this phase, I encountered various issues. However, I have been able to run the infrastructure with ansible with special conditions which are:
+	
+	\begin{itemize}
+	\item Making the infrastructure by hand, and waiting for the node to register, even if there was error.
+	\item Creating the infrastructure by hand, but creating the cluster through ansible, fine too, we have to wait for the node to register itself.
+	\item I now have to test if making all the infrastructure by Ansible works, still waiting for the node to register as it takes time.
+	\end{itemize}
+	
+	I think, and I guess that if I restart rke2-server.service before it finishes, all the infrastructure crashes, so my best option is just to wait.
+	
+	For tomorrow, I have to test the full Infrastructure setup with Ansible.
+	
+	
+\end{document}

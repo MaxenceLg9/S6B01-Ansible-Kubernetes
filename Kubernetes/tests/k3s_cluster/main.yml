@@ -1,0 +1,7 @@
+---
+- name: "Installing k3s"
+  import_playbook: "playbooks/k3s.yml"
+- name: "Installing Helm on k3s "
+  import_playbook: "playbooks/helm.yml"
+- name: "Installing Rancher on k3s "
+  import_playbook: "playbooks/rancher.yml"

@@ -1,0 +1,10 @@
+  - name: "Create cluster"
+    ansible.builtin.uri:
+      url: "https://rancher.rancher/v1/provisioning.cattle.io.clusters"
+      body_format: json
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      body: "{{ rancher_cluster_json_body }}"
+      method: POST
+      validate_certs: false
+      status_code: [201]

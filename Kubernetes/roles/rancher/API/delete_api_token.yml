@@ -1,0 +1,8 @@
+  - name: Delete fresh created token
+    ansible.builtin.uri:
+      url: https://rancher.rancher/v3/tokens/{{ rancher_api_token.json.name }}
+      method: DELETE
+      status_code: [204]
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      validate_certs: false

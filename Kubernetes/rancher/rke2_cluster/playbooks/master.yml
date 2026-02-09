@@ -1,0 +1,214 @@
+#############################
+- name: "Get credentials"
+  hosts: k3s_cluster
+  vars_files:
+    - "../../global_vars.yml"
+
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+  tasks:
+
+  # Get a Cookie to access to the Web Rancher API
+  - name: "Get JWT Token"
+    ansible.builtin.uri:
+      body:
+        description: "UI session"
+        responseType: "cookie"
+        username: admin
+        password: oscar
+      body_format: "json"
+      method: POST
+      url: https://{{ rancher_hostname }}/v3-public/localProviders/local?action=login
+      validate_certs: false
+    until: rancher_cookie.status == 200
+    retries: 30
+    delay: 10
+    register: rancher_cookie
+
+  # Get the raw JSON data that contains the clusterID
+  - name: "Get cluster ID"
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v3/clusters"
+      validate_certs: false
+      method: GET
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+    register: "rancher_cluster_data"
+
+  # Get clusterID from raw JSON data, useful to get the token to register nodes
+  - name: Extract Cluster ID from Cluster Data
+    set_fact:
+      cluster_id: "{{ rancher_cluster_data.json.data | selectattr('name', 'equalto', 'project') | map(attribute='id') | first }}"
+
+  - debug: msg="{{ cluster_id }}"
+  
+  # Get Raw JSON data that contains the token
+  - name: "Get registration command"
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v3/clusterregistrationtokens"
+      method: GET
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      validate_certs: false
+    register: "rancher_response_register"
+
+  - debug: msg="{{ rancher_response_register.json.data }}"
+
+  # Get clusterID from raw json data
+  - name: Extract Cluster ID
+    set_fact:
+      token: "{{ rancher_response_register.json.data | selectattr('clusterId', 'equalto', cluster_id ) | map(attribute='token') | first }}"
+
+  - debug: msg="{{ token }}"
+  
+  # Output the Rancher CA cert from kubectl secret
+  - name: Get Rancher CA certificate from Secret
+    kubernetes.core.k8s_info:
+      kind: Secret
+      name: tls-rancher-ingress
+      namespace: cattle-system
+    register: rancher_secret
+
+  # Write CA cert to ca.crt
+  - name: Save CA certificate to /tmp/ca.crt
+    ansible.builtin.copy:
+      content: "{{ rancher_secret.resources[0].data['ca.crt'] | b64decode }}"
+      dest: /tmp/ca.crt
+      mode: '0644'
+
+  # Get Checksum of the CA
+  - name: "Get CA Cert checksum"
+    ansible.builtin.stat:
+      checksum_algorithm: sha256
+      get_checksum: true
+      path: /tmp/ca.crt
+    register: ca_checksum
+
+  # Debug it
+  - debug: msg="{{ ca_checksum.stat.checksum }}"
+
+#############################
+- name: "Register node"
+  hosts: master
+  vars_files:
+    - "../../global_vars.yml"
+    - "../vars/master.yml"
+  environment:
+    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+  
+  tasks:
+
+  # Check if system is using systemd-resolved
+  - name: Check current resolv.conf status
+    ansible.builtin.command: grep -q "127.0.0.53" /etc/resolv.conf
+    register: dns_check
+    failed_when: false
+    changed_when: false
+  
+  # Create directory if using systemd-resolved
+  - name: Create RKE2 config directory
+    ansible.builtin.file:
+      path: /etc/rancher/rke2
+      state: directory
+      mode: '0755'
+    when: dns_check.rc == 0
+    
+  # To avoid DNS issue if using systemd-resolved
+  - name: Write RKE2 configuration file
+    ansible.builtin.copy:
+      dest: /etc/rancher/rke2/config.yaml
+      content: |
+        services:
+          kubelet:
+            extra_args:
+              resolv-conf: "/run/systemd/resolve/resolv.conf"
+      owner: root
+      group: root
+      mode: '0644'
+    when: dns_check.rc == 0
+
+  - name: 5. Extract the Registration Command
+    set_fact:
+      token: "{{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }}"
+
+  - name: 5. Extract the Checksum
+    set_fact:
+      checksum: "{{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }}"
+
+  - debug: msg="curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --etcd --controlplane --worker --node-name master"
+
+  # Downloading agent executable
+  - name: "Downloading agent"
+    ansible.builtin.get_url:
+      dest: "/tmp/rancher.sh"
+      url: "https://{{ rancher_hostname }}/system-agent-install.sh"
+      mode: '0755'
+      force: true
+      validate_certs: false
+  
+  - debug: msg="/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }} --ca-checksum {{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
+
+  # Deploying RKE2-Server
+  - name: "Execute script to register the node"
+    ansible.builtin.shell:
+      executable: "/usr/bin/bash"
+      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }} --ca-checksum {{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
+
+  - name: Wait for cluster initialization
+    ansible.builtin.pause:
+      minutes: 5
+
+  - name: Wait for Calico Kube Deployment to be available
+    kubernetes.core.k8s_info:
+      kind: Deployment
+      name: calico-kube-controllers
+      namespace: calico-system
+    register: calico_deploy
+    until: calico_deploy.resources[0].status.readyReplicas is defined and calico_deploy.resources[0].status.readyReplicas >= 1
+    retries: 720
+    delay: 5
+  
+  - name: Extract version string
+    set_fact:
+      calico_version: "{{ calico_deploy.resources[0].spec.template.spec.containers[0].image | regex_search('v[0-9]+\\.[0-9]+\\.[0-9]+') }}"
+
+  - name: Debug extracted version
+    debug:
+      msg: "The detected Calico version is {{ calico_version }}"
+
+  - name: "Download Calico executable"
+    ansible.builtin.get_url:
+      dest: "/usr/bin/calico"
+      url: "https://github.com/projectcalico/calico/releases/download/{{ calico_version }}/calicoctl-linux-amd64"
+      mode: '0700'
+  
+  - name: Create script to flush unused but claimed IP
+    ansible.builtin.copy:
+      content: |
+          #!/bin/bash
+          # Set environment so calicoctl can find the cluster
+          export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+          export PATH=$PATH:/usr/local/bin:/var/lib/rancher/rke2/bin
+
+          # 1. Lock (Warning: No new pods can start while locked)
+          calicoctl datastore migrate lock
+
+          # 2. Check and Release
+          calicoctl ipam check -o /tmp/report.json
+          if [ -f /tmp/report.json ]; then
+              calicoctl ipam release --from-report /tmp/report.json
+              rm /tmp/report.json
+          fi
+
+          # 3. Always unlock, even if previous commands failed
+          calicoctl datastore migrate unlock
+      dest: /root/purge.sh
+      mode: '0755'
+
+  - name: Add purge script to crontab if not present
+    ansible.builtin.lineinfile:
+      path: /etc/crontab
+      line: "*/5 * * * * root /root/purge.sh"
+      state: present
+      insertafter: EOF  # Ensures it goes to the bottom of the file

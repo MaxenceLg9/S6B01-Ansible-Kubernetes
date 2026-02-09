@@ -1,0 +1,51 @@
+#############################
+- name: "Create k3s cluster"
+  hosts: k3s_cluster
+  vars_files:
+    - "../vars/k3s.yml"
+  
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+  
+  tasks:
+
+  - name: Check current resolv.conf status
+    ansible.builtin.command: grep -q "127.0.0.53" /etc/resolv.conf
+    register: dns_check
+    failed_when: false
+    changed_when: false
+
+  - name: "Check if K3s is already installed"
+    ansible.builtin.stat:
+        path: "/tmp/k3s.sh"
+    register: "k3s_cluster"
+
+  - name: "Download script from k3s"
+    when: "not k3s_cluster.stat.exists"
+    ansible.builtin.get_url:
+      dest: "/tmp/k3s.sh"
+      url: "https://get.k3s.io"
+      mode: '0755'
+
+  - name: "Execute script, using systemd-resolved"
+    ansible.builtin.shell:
+      executable: "/usr/bin/bash"
+      cmd: "/tmp/k3s.sh server --resolv-conf /run/systemd/resolve/resolv.conf"
+    when: dns_check.rc == 0
+  
+  - name: "Execute script, not using systemd-resolved"
+    ansible.builtin.shell:
+      executable: "/usr/bin/bash"
+      cmd: "/tmp/k3s.sh server"
+    when: dns_check.rc != 0
+
+  - name: "Install requirements"
+    ansible.builtin.apt:
+      name: "python3-kubernetes"
+      state: present
+
+
+  - name: "Wait for node token to be generated"
+    ansible.builtin.wait_for:
+      path: /var/lib/rancher/k3s/server/node-token
+  become: true

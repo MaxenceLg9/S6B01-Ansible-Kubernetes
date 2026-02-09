@@ -1,0 +1,54 @@
+#############################
+- name: "Create Rancher workload"
+  hosts: k3s_cluster
+  vars_files:
+    - "../vars/rancher_cluster.yml"
+    - "../../global_vars.yml"
+  become: true
+  
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  
+  tasks:
+
+  - name: "Get JWT Cookie"
+    ansible.builtin.uri:
+      body:
+        description: "UI session"
+        responseType: "cookie"
+        username: admin
+        password: oscar
+      body_format: "json"
+      method: POST
+      url: https://{{ rancher_hostname }}/v3-public/localProviders/local?action=login
+      validate_certs: false
+    until: rancher_cookie.status == 200
+    retries: 30
+    delay: 10
+    register: rancher_cookie
+
+  - name: "Create cluster"
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v1/provisioning.cattle.io.clusters"
+      body_format: json
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      body: "{{ rancher_cluster_json_body }}"
+      method: POST
+      validate_certs: false
+      status_code: [201]
+    ignore_errors: True
+
+  - name: Wait for Rancher Webhook and Proxy to stabilize! MANDATORY!!!
+    ansible.builtin.pause:
+      minutes: 2
+
+  - name: Wait for CAPI Controller Deployment to be available
+    kubernetes.core.k8s_info:
+      kind: Deployment
+      name: capi-controller-manager
+      namespace: cattle-capi-system
+    register: capi_deploy
+    until: capi_deploy.resources[0].status.readyReplicas is defined and capi_deploy.resources[0].status.readyReplicas >= 1
+    retries: 720
+    delay: 5

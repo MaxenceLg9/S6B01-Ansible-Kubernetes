@@ -1,0 +1,17 @@
+  - name: "Create API Bearer Token"
+    ansible.builtin.uri:
+      url: https://rancher.rancher/v3/tokens
+      body_format: "json"
+      method: POST
+      validate_certs: false
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      body:
+        type: "token"
+        metadata: "{}"
+        description: nouveau
+        tti: 7776000000
+      status_code: [201]
+    register: rancher_api_token
+    
+  - debug: msg="{{ rancher_api_token.json.token }}"

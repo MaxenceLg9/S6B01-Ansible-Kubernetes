@@ -1,0 +1,16 @@
+##############
+- name: "Setup nodes"
+  hosts: rke2_cluster
+  vars_files:
+    - "../../global_vars.yml"
+    - "../vars/setup.yml"
+
+  environment:
+    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+
+  tasks:
+
+  - name: Install iptables package
+    ansible.builtin.apt:
+      name: iptables
+      state: present

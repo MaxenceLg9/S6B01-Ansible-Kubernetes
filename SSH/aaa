@@ -1,0 +1,265 @@
+GET /v3/clusterregistrationtokens HTTP/2
+Host: rancher.rancher
+Cookie: R_PCS=dark; R_REDIRECTED=true; R_LOCALE=en-us; CSRF=6c4d8ac4a52369cbbda7a3e3d5110b62; R_SESS=token-hk5lw:qxx4mmxdfmv7z5fqq6dhwdngg5wmmjcz2q662w8r7drzpbrvb5qjrr
+Sec-Ch-Ua-Platform: "Linux"
+Accept-Language: en-US,en;q=0.9
+Accept: application/json
+X-Api-Csrf: 6c4d8ac4a52369cbbda7a3e3d5110b62
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Chromium";v="143", "Not A(Brand";v="24"
+Sec-Ch-Ua-Mobile: ?0
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://rancher.rancher/dashboard/c/_/manager/provisioning.cattle.io.cluster/fleet-default/project
+Accept-Encoding: gzip, deflate, br
+Priority: u=1, i
+
+-------------------
+type: provisioning.cattle.io.cluster
+metadata:
+  namespace: fleet-default
+  annotations:
+    field.cattle.io/description: "{{ rancher_cluster_description }}"
+  name: "{{ rancher_cluster_name: }}"
+spec:
+  rkeConfig:
+    chartValues:
+      rke2-calico: {}
+    upgradeStrategy:
+      controlPlaneConcurrency: '1'
+      controlPlaneDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+      workerConcurrency: '1'
+      workerDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+    dataDirectories:
+      systemAgent: ''
+      provisioning: ''
+      k8sDistro: ''
+    machineGlobalConfig:
+      cni: calico
+      disable-kube-proxy: false
+      etcd-expose-metrics: false
+    networking: {}
+    machineSelectorConfig:
+    - config:
+        protect-kernel-defaults: false
+    etcd:
+      disableSnapshots: false
+      s3: 
+      snapshotRetention: 5
+      snapshotScheduleCron: 0 */5 * * *
+    registries:
+      configs: {}
+      mirrors: {}
+    machinePools: []
+  machineSelectorConfig:
+  - config: {}
+  kubernetesVersion: v1.34.3+rke2r1
+  defaultPodSecurityAdmissionConfigurationTemplateName: ''
+  localClusterAuthEndpoint:
+    enabled: false
+    -------------------
+    {
+        "cache_control": "no-cache, no-store, must-revalidate",
+        "changed": false,
+        "connection": "close",
+        "content_type": "application/json",
+        "cookies": {},
+        "cookies_string": "",
+        "date": "Tue, 03 Feb 2026 15:26:40 GMT",
+        "elapsed": 0,
+        "expires": "Wed 24 Feb 1982 18:42:00 GMT",
+        "failed": false,
+        "json": {
+            "actions": {},
+            "createTypes": {
+                "clusterRegistrationToken": "https://rancher.rancher/v3/clusterregistrationtokens"
+            },
+            "data": [
+                {
+                    "baseType": "clusterRegistrationToken",
+                    "clusterId": "c-m-gjt8xgjf",
+                    "command": "kubectl apply -f https://rancher.rancher/v3/import/wm2szmw2vjcxmprc4fb85wrh75cp9b9wmq92ljrbpkxcn9xr6whxvr_c-m-gjt8xgjf.yaml",
+                    "created": "2026-02-03T15:19:55Z",
+                    "createdTS": 1770131995000,
+                    "creatorId": null,
+                    "id": "c-m-gjt8xgjf:default-token",
+                    "insecureCommand": "curl --insecure -sfL https://rancher.rancher/v3/import/wm2szmw2vjcxmprc4fb85wrh75cp9b9wmq92ljrbpkxcn9xr6whxvr_c-m-gjt8xgjf.yaml | kubectl apply -f -",
+                    "insecureNodeCommand": " curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://rancher.rancher --label 'cattle.io/os=linux' --token wm2szmw2vjcxmprc4fb85wrh75cp9b9wmq92ljrbpkxcn9xr6whxvr --ca-checksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "insecureWindowsNodeCommand": " curl.exe --insecure -fL https://rancher.rancher/wins-agent-install.ps1 -o install.ps1; Set-ExecutionPolicy Bypass -Scope Process -Force; ./install.ps1 -Server https://rancher.rancher -Label 'cattle.io/os=windows' -Token wm2szmw2vjcxmprc4fb85wrh75cp9b9wmq92ljrbpkxcn9xr6whxvr -Worker -CaChecksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "links": {
+                        "remove": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-gjt8xgjf:default-token",
+                        "self": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-gjt8xgjf:default-token",
+                        "update": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-gjt8xgjf:default-token"
+                    },
+                    "manifestUrl": "https://rancher.rancher/v3/import/wm2szmw2vjcxmprc4fb85wrh75cp9b9wmq92ljrbpkxcn9xr6whxvr_c-m-gjt8xgjf.yaml",
+                    "name": "default-token",
+                    "namespaceId": null,
+                    "nodeCommand": " curl -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://rancher.rancher --label 'cattle.io/os=linux' --token wm2szmw2vjcxmprc4fb85wrh75cp9b9wmq92ljrbpkxcn9xr6whxvr --ca-checksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "state": "active",
+                    "token": "wm2szmw2vjcxmprc4fb85wrh75cp9b9wmq92ljrbpkxcn9xr6whxvr",
+                    "transitioning": "no",
+                    "transitioningMessage": "",
+                    "type": "clusterRegistrationToken",
+                    "uuid": "b67d4cf1-e493-46ce-858d-723e0909e28a",
+                    "windowsNodeCommand": " curl.exe -fL https://rancher.rancher/wins-agent-install.ps1 -o install.ps1; Set-ExecutionPolicy Bypass -Scope Process -Force; ./install.ps1 -Server https://rancher.rancher -Label 'cattle.io/os=windows' -Token wm2szmw2vjcxmprc4fb85wrh75cp9b9wmq92ljrbpkxcn9xr6whxvr -Worker -CaChecksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44"
+                },
+                {
+                    "baseType": "clusterRegistrationToken",
+                    "clusterId": "c-m-vtw4fl9d",
+                    "command": "kubectl apply -f https://rancher.rancher/v3/import/w7529xf9cdxd67d8zk65gm7g7c56876s58mzsxqjvj88m625bstd4c_c-m-vtw4fl9d.yaml",
+                    "created": "2026-02-03T15:22:32Z",
+                    "createdTS": 1770132152000,
+                    "creatorId": null,
+                    "id": "c-m-vtw4fl9d:default-token",
+                    "insecureCommand": "curl --insecure -sfL https://rancher.rancher/v3/import/w7529xf9cdxd67d8zk65gm7g7c56876s58mzsxqjvj88m625bstd4c_c-m-vtw4fl9d.yaml | kubectl apply -f -",
+                    "insecureNodeCommand": " curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://rancher.rancher --label 'cattle.io/os=linux' --token w7529xf9cdxd67d8zk65gm7g7c56876s58mzsxqjvj88m625bstd4c --ca-checksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "insecureWindowsNodeCommand": " curl.exe --insecure -fL https://rancher.rancher/wins-agent-install.ps1 -o install.ps1; Set-ExecutionPolicy Bypass -Scope Process -Force; ./install.ps1 -Server https://rancher.rancher -Label 'cattle.io/os=windows' -Token w7529xf9cdxd67d8zk65gm7g7c56876s58mzsxqjvj88m625bstd4c -Worker -CaChecksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "links": {
+                        "remove": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-vtw4fl9d:default-token",
+                        "self": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-vtw4fl9d:default-token",
+                        "update": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-vtw4fl9d:default-token"
+                    },
+                    "manifestUrl": "https://rancher.rancher/v3/import/w7529xf9cdxd67d8zk65gm7g7c56876s58mzsxqjvj88m625bstd4c_c-m-vtw4fl9d.yaml",
+                    "name": "default-token",
+                    "namespaceId": null,
+                    "nodeCommand": " curl -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://rancher.rancher --label 'cattle.io/os=linux' --token w7529xf9cdxd67d8zk65gm7g7c56876s58mzsxqjvj88m625bstd4c --ca-checksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "state": "active",
+                    "token": "w7529xf9cdxd67d8zk65gm7g7c56876s58mzsxqjvj88m625bstd4c",
+                    "transitioning": "no",
+                    "transitioningMessage": "",
+                    "type": "clusterRegistrationToken",
+                    "uuid": "0742a8a5-0693-4ffe-9f62-88f8514087db",
+                    "windowsNodeCommand": " curl.exe -fL https://rancher.rancher/wins-agent-install.ps1 -o install.ps1; Set-ExecutionPolicy Bypass -Scope Process -Force; ./install.ps1 -Server https://rancher.rancher -Label 'cattle.io/os=windows' -Token w7529xf9cdxd67d8zk65gm7g7c56876s58mzsxqjvj88m625bstd4c -Worker -CaChecksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44"
+                },
+                {
+                    "baseType": "clusterRegistrationToken",
+                    "clusterId": "c-m-xwnm82nd",
+                    "command": "kubectl apply -f https://rancher.rancher/v3/import/nwg2vqpm2cvv58v6w24hhxszpqw9rszfvvp4j5knsjpzspdxw5l47t_c-m-xwnm82nd.yaml",
+                    "created": "2026-02-03T15:26:39Z",
+                    "createdTS": 1770132399000,
+                    "creatorId": null,
+                    "id": "c-m-xwnm82nd:default-token",
+                    "insecureCommand": "curl --insecure -sfL https://rancher.rancher/v3/import/nwg2vqpm2cvv58v6w24hhxszpqw9rszfvvp4j5knsjpzspdxw5l47t_c-m-xwnm82nd.yaml | kubectl apply -f -",
+                    "insecureNodeCommand": " curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://rancher.rancher --label 'cattle.io/os=linux' --token nwg2vqpm2cvv58v6w24hhxszpqw9rszfvvp4j5knsjpzspdxw5l47t --ca-checksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "insecureWindowsNodeCommand": " curl.exe --insecure -fL https://rancher.rancher/wins-agent-install.ps1 -o install.ps1; Set-ExecutionPolicy Bypass -Scope Process -Force; ./install.ps1 -Server https://rancher.rancher -Label 'cattle.io/os=windows' -Token nwg2vqpm2cvv58v6w24hhxszpqw9rszfvvp4j5knsjpzspdxw5l47t -Worker -CaChecksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "links": {
+                        "remove": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-xwnm82nd:default-token",
+                        "self": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-xwnm82nd:default-token",
+                        "update": "https://rancher.rancher/v3/clusterRegistrationTokens/c-m-xwnm82nd:default-token"
+                    },
+                    "manifestUrl": "https://rancher.rancher/v3/import/nwg2vqpm2cvv58v6w24hhxszpqw9rszfvvp4j5knsjpzspdxw5l47t_c-m-xwnm82nd.yaml",
+                    "name": "default-token",
+                    "namespaceId": null,
+                    "nodeCommand": " curl -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://rancher.rancher --label 'cattle.io/os=linux' --token nwg2vqpm2cvv58v6w24hhxszpqw9rszfvvp4j5knsjpzspdxw5l47t --ca-checksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "state": "active",
+                    "token": "nwg2vqpm2cvv58v6w24hhxszpqw9rszfvvp4j5knsjpzspdxw5l47t",
+                    "transitioning": "no",
+                    "transitioningMessage": "",
+                    "type": "clusterRegistrationToken",
+                    "uuid": "5a34cc9e-ace8-4755-9272-e2a3119e27dc",
+                    "windowsNodeCommand": " curl.exe -fL https://rancher.rancher/wins-agent-install.ps1 -o install.ps1; Set-ExecutionPolicy Bypass -Scope Process -Force; ./install.ps1 -Server https://rancher.rancher -Label 'cattle.io/os=windows' -Token nwg2vqpm2cvv58v6w24hhxszpqw9rszfvvp4j5knsjpzspdxw5l47t -Worker -CaChecksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44"
+                },
+                {
+                    "baseType": "clusterRegistrationToken",
+                    "clusterId": "local",
+                    "command": "kubectl apply -f https://rancher.rancher/v3/import/r7wk67q5fdczdztnxp9ckfzlkgpvr4778s67w5tvkxk4x7qfp2fhb7_local.yaml",
+                    "created": "2026-02-03T14:05:10Z",
+                    "createdTS": 1770127510000,
+                    "creatorId": null,
+                    "id": "local:default-token",
+                    "insecureCommand": "curl --insecure -sfL https://rancher.rancher/v3/import/r7wk67q5fdczdztnxp9ckfzlkgpvr4778s67w5tvkxk4x7qfp2fhb7_local.yaml | kubectl apply -f -",
+                    "insecureNodeCommand": " curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://rancher.rancher --label 'cattle.io/os=linux' --token r7wk67q5fdczdztnxp9ckfzlkgpvr4778s67w5tvkxk4x7qfp2fhb7 --ca-checksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "insecureWindowsNodeCommand": " curl.exe --insecure -fL https://rancher.rancher/wins-agent-install.ps1 -o install.ps1; Set-ExecutionPolicy Bypass -Scope Process -Force; ./install.ps1 -Server https://rancher.rancher -Label 'cattle.io/os=windows' -Token r7wk67q5fdczdztnxp9ckfzlkgpvr4778s67w5tvkxk4x7qfp2fhb7 -Worker -CaChecksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "links": {
+                        "remove": "https://rancher.rancher/v3/clusterRegistrationTokens/local:default-token",
+                        "self": "https://rancher.rancher/v3/clusterRegistrationTokens/local:default-token",
+                        "update": "https://rancher.rancher/v3/clusterRegistrationTokens/local:default-token"
+                    },
+                    "manifestUrl": "https://rancher.rancher/v3/import/r7wk67q5fdczdztnxp9ckfzlkgpvr4778s67w5tvkxk4x7qfp2fhb7_local.yaml",
+                    "name": "default-token",
+                    "namespaceId": null,
+                    "nodeCommand": " curl -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://rancher.rancher --label 'cattle.io/os=linux' --token r7wk67q5fdczdztnxp9ckfzlkgpvr4778s67w5tvkxk4x7qfp2fhb7 --ca-checksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44",
+                    "state": "active",
+                    "token": "r7wk67q5fdczdztnxp9ckfzlkgpvr4778s67w5tvkxk4x7qfp2fhb7",
+                    "transitioning": "no",
+                    "transitioningMessage": "",
+                    "type": "clusterRegistrationToken",
+                    "uuid": "39036c6e-7a59-4b73-80e7-ddfd25d5833f",
+                    "windowsNodeCommand": " curl.exe -fL https://rancher.rancher/wins-agent-install.ps1 -o install.ps1; Set-ExecutionPolicy Bypass -Scope Process -Force; ./install.ps1 -Server https://rancher.rancher -Label 'cattle.io/os=windows' -Token r7wk67q5fdczdztnxp9ckfzlkgpvr4778s67w5tvkxk4x7qfp2fhb7 -Worker -CaChecksum 7836eeb7dfa452f44dbf1fb865381e34684bc4896902cb9351ade56f309eff44"
+                }
+            ],
+            "filters": {
+                "clusterId": null,
+                "command": null,
+                "created": null,
+                "creatorId": null,
+                "insecureCommand": null,
+                "insecureNodeCommand": null,
+                "insecureWindowsNodeCommand": null,
+                "manifestUrl": null,
+                "name": null,
+                "namespaceId": null,
+                "nodeCommand": null,
+                "removed": null,
+                "state": null,
+                "token": null,
+                "transitioning": null,
+                "transitioningMessage": null,
+                "uuid": null,
+                "windowsNodeCommand": null
+            },
+            "links": {
+                "self": "https://rancher.rancher/v3/clusterregistrationtokens"
+            },
+            "pagination": {
+                "limit": 1000,
+                "total": 4
+            },
+            "resourceType": "clusterRegistrationToken",
+            "sort": {
+                "links": {
+                    "command": "https://rancher.rancher/v3/clusterregistrationtokens?sort=command",
+                    "insecureCommand": "https://rancher.rancher/v3/clusterregistrationtokens?sort=insecureCommand",
+                    "insecureNodeCommand": "https://rancher.rancher/v3/clusterregistrationtokens?sort=insecureNodeCommand",
+                    "insecureWindowsNodeCommand": "https://rancher.rancher/v3/clusterregistrationtokens?sort=insecureWindowsNodeCommand",
+                    "manifestUrl": "https://rancher.rancher/v3/clusterregistrationtokens?sort=manifestUrl",
+                    "nodeCommand": "https://rancher.rancher/v3/clusterregistrationtokens?sort=nodeCommand",
+                    "state": "https://rancher.rancher/v3/clusterregistrationtokens?sort=state",
+                    "token": "https://rancher.rancher/v3/clusterregistrationtokens?sort=token",
+                    "transitioning": "https://rancher.rancher/v3/clusterregistrationtokens?sort=transitioning",
+                    "transitioningMessage": "https://rancher.rancher/v3/clusterregistrationtokens?sort=transitioningMessage",
+                    "uuid": "https://rancher.rancher/v3/clusterregistrationtokens?sort=uuid",
+                    "windowsNodeCommand": "https://rancher.rancher/v3/clusterregistrationtokens?sort=windowsNodeCommand"
+                },
+                "order": "asc",
+                "reverse": "https://rancher.rancher/v3/clusterregistrationtokens?order=desc"
+            },
+            "type": "collection"
+        },
+        "msg": "OK (unknown bytes)",
+        "redirected": false,
+        "status": 200,
+        "transfer_encoding": "chunked",
+        "url": "https://rancher.rancher/v3/clusterregistrationtokens",
+        "x_api_cattle_auth": "true",
+        "x_api_schemas": "https://rancher.rancher/v3/schemas",
+        "x_content_type_options": "nosniff"
+    }
+}

@@ -1,0 +1,8 @@
+  - name: "Get registration command"
+    ansible.builtin.uri:
+      url: "https://rancher.rancher/v3/clusterregistrationtokens"
+      method: GET
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      validate_certs: false
+    register: "rancher_response_register"

@@ -1,0 +1,27 @@
+global:
+  hosts:
+    domain: nailloux . gitlab .com # Your domain
+    gitlab:
+      name: nailloux . gitlab .com
+    externalIP: 10.0.1.4
+  ingress:
+    configureCertmanager: true
+# If you want to use your existing external PostgreSQL /Redis , configure here.
+# Otherwise , it will install them inside the cluster .
+certmanager - issuer:
+  email: root@nailloux .lan
+gitlab:
+  webservice:
+    # This solves your previous " unmapped file" error
+    extraVolumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+    extraVolumeMounts:
+      - name: dshm
+        mountPath: /dev/shm
+    resources:
+      requests:
+        memory: 4Gi
+      limits:
+        memory: 8Gi
