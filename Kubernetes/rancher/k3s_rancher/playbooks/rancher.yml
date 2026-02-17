@@ -50,21 +50,6 @@
         replicas: 1
         hostname: "{{ rancher_hostname }}"
         bootstrapPassword: "oscar"
-
-  # # Download Rancher CLI binary
-  # - name: "Download Rancher Command Line Interface"
-  #   ansible.builtin.unarchive:
-  #     src: "https://github.com/rancher/cli/releases/download/v2.13.2/rancher-linux-amd64-v2.13.2.tar.gz"
-  #     dest: /tmp/
-  #     remote_src: yes
-
-  # # Add the binary to the path
-  # - name: "Moove the binary to bin"
-  #   ansible.builtin.copy:
-  #     src: "/tmp/rancher-v2.13.2/rancher"
-  #     dest: /usr/local/bin/rancher
-  #     mode: 0755
-  #     remote_src: yes
   
   - name: Wait for Rancher Deployment to be available
     kubernetes.core.k8s_info:
@@ -88,4 +73,4 @@
 
   - name: Wait for Bootstraping on the loging page
     ansible.builtin.pause:
-      minutes: 2
+      minutes: 1

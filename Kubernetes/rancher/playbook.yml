@@ -4,4 +4,4 @@
 - name: "Setup k3s cluster"
   import_playbook: "k3s_rancher/main.yml"
 - name: "Setup nodes"
-  import_playbook: "rke2_cluster/main.yml"
+  import_playbook: "gitlab_cluster/main.yml"

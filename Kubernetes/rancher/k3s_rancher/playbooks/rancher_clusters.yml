@@ -1,8 +1,8 @@
 #############################
-- name: "Create Rancher workload"
+- name: "Create Rancher clusters"
   hosts: k3s_cluster
   vars_files:
-    - "../vars/rancher_cluster.yml"
+    - "../vars/rancher_clusters.yml"
     - "../../global_vars.yml"
   become: true
   
@@ -27,13 +27,25 @@
     delay: 10
     register: rancher_cookie
 
-  - name: "Create cluster"
+  - name: "Create Gitlab cluster"
     ansible.builtin.uri:
       url: "https://{{ rancher_hostname }}/v1/provisioning.cattle.io.clusters"
       body_format: json
       headers:
         Cookie: "{{ rancher_cookie.cookies_string }}"
-      body: "{{ rancher_cluster_json_body }}"
+      body: "{{ rancher_cluster_gitlab_json_body }}"
+      method: POST
+      validate_certs: false
+      status_code: [201]
+    ignore_errors: True
+
+  - name: "Create Nailloux cluster"
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v1/provisioning.cattle.io.clusters"
+      body_format: json
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      body: "{{ rancher_cluster_nailloux_json_body }}"
       method: POST
       validate_certs: false
       status_code: [201]
@@ -41,7 +53,7 @@
 
   - name: Wait for Rancher Webhook and Proxy to stabilize! MANDATORY!!!
     ansible.builtin.pause:
-      minutes: 2
+      minutes: 1
 
   - name: Wait for CAPI Controller Deployment to be available
     kubernetes.core.k8s_info:

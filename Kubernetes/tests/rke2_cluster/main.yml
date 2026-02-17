@@ -1,3 +1,0 @@
----
-- name: "Registering nodes"
-  import_playbook: "playbooks/master.yml"

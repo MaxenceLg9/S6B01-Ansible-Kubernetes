@@ -44,8 +44,6 @@
       name: "python3-kubernetes"
       state: present
 
-
   - name: "Wait for node token to be generated"
     ansible.builtin.wait_for:
       path: /var/lib/rancher/k3s/server/node-token
-  become: true

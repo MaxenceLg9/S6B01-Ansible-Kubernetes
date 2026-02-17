@@ -1,5 +1,5 @@
 #############################
-- name: "Create Rancher workload"
+- name: "Bootstrap Rancher webapp"
   hosts: k3s_cluster
   vars_files:
     - "../vars/rancher_boostrap.yml"

@@ -1,6 +1,6 @@
   - name: "Delete freshly created cluster"
     ansible.builtin.uri:
-      url: "https://rancher.rancher/v1/provisioning.cattle.io.clusters/fleet-default/{{ rancher_cluster_name }}"
+      url: "https://rancher.rancher/v1/provisioning.cattle.io.clusters/fleet-default/{{ rancher_cluster_gitlab_name }}"
       headers:
         Cookie: "{{ rancher_cookie.cookies_string }}"
       method: DELETE

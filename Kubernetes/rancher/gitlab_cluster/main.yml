@@ -1,4 +1,6 @@
 ---
+- name: "Setup nodes"
+  import_playbook: "playbooks/setup.yml"
 - name: "Registering master node"
   import_playbook: "playbooks/master.yml"
 - name: "Registering workers nodes"

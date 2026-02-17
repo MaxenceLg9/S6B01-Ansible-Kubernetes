@@ -8,4 +8,4 @@
 - name: "Boostrap rancher dashboard on k3s "
   import_playbook: "playbooks/rancher_boostrap.yml"
 - name: "Create cluster on Rancher"
-  import_playbook: "playbooks/rancher_cluster.yml"
+  import_playbook: "playbooks/rancher_clusters.yml"
