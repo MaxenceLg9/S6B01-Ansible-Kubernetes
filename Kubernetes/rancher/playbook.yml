@@ -5,3 +5,5 @@
   import_playbook: "k3s_rancher/main.yml"
 - name: "Setup nodes"
   import_playbook: "gitlab_cluster/main.yml"
+- name: "Setup nailloux cluster"
+  import_playbook: "nailloux_cluster/main.yml"
