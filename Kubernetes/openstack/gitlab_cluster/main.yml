@@ -9,5 +9,3 @@
   import_playbook: "playbooks/local_path.yml"
 - name: "Deploy Gitlab and Gitlab Runner workloads"
   import_playbook: "playbooks/gitlab.yml"
-- name: "Deploy Docker registry workloads"
-  import_playbook: "playbooks/docker-registry.yml"

@@ -1,0 +1,146 @@
+#############################
+- name: "Bootstrap Rancher webapp"
+  hosts: k3s_cluster
+  vars_files:
+    - "../vars/rancher_boostrap.yml"
+    - "../../global_vars.yml"
+  become: true
+  
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  
+  tasks:
+
+  - name: "Get JWT Cookie"
+    ansible.builtin.uri:
+      body:
+        description: "UI session"
+        responseType: "cookie"
+        username: admin
+        password: oscar
+      body_format: "json"
+      method: POST
+      url: https://{{ rancher_hostname }}/v3-public/localProviders/local?action=login
+      validate_certs: false
+    until: rancher_cookie.status == 200
+    retries: 30
+    delay: 10
+    register: rancher_cookie
+
+  - name: "Get user-id"
+    ansible.builtin.uri:
+      url: https://{{ rancher_hostname }}/v1/userpreferences?exclude=metadata.managedFields
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      validate_certs: false
+    register: userpreferences
+
+  - debug: msg="{{ userpreferences }}"
+
+  - name: Extract user-id
+    set_fact:
+      user_id: "{{ userpreferences.json.data[0].id }}"
+
+  - debug: msg="{{ user_id }}"
+  
+  - name: "Get user-id"
+    ansible.builtin.uri:
+      url: https://{{ rancher_hostname }}/v1/userpreferences/{{ user_id }}
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      body_format: json
+      body:
+        id: "{{ user_id }}"
+        type: userpreference
+        data:
+          locale: en-us
+      validate_certs: false
+
+
+  - name: Wait for Provisioning API CRDs to initialize
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v1/provisioning.cattle.io.clusters"
+      method: GET
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      validate_certs: false
+      status_code: 200
+    register: api_check
+    until: api_check.status == 200
+    retries: 20
+    delay: 10
+  
+  # Printing cookie response
+  - debug: msg="{{ rancher_cookie.cookies['R_SESS'] }}"
+
+  # BootStrap login
+  - name: "Bypass Rancher First Login"
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v3/settings/first-login"
+      method: PUT
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      body_format: json
+      body:
+        id: "first-login"
+        value: "false"
+      validate_certs: false
+      status_code: [200, 409] # 409 might mean it's already set, which is fine
+    register: first_login_result
+
+  - name: "Set Server URL (Required for Cluster Stability)"
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v3/settings/server-url"
+      method: PUT
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      body_format: json
+      body:
+        id: "server-url"
+        value: "https://{{ rancher_hostname }}"
+      validate_certs: false
+      status_code: 200
+  
+  - name: Define ISO timestamp
+    set_fact:
+      my_timestamp: "{{ now(fmt='%Y-%m-%dT%H:%M:%S.%f')[:-3] }}Z"
+
+  - debug:
+      msg: "Value: {{ my_timestamp }}"
+
+  - name: Get resource version for eula
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v1/management.cattle.io.settings?exclude=metadata.managedFields"
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      validate_certs: false
+    register: settings
+
+  - debug: msg="{{ settings }}"
+
+  - name: Extract Resource version
+    set_fact:
+      resourceVersion: "{{ settings.json.data | selectattr('id', 'equalto', 'eula-agreed' ) | map(attribute='metadata.resourceVersion') | first }}"
+
+  - debug:
+      msg: "Value: {{ my_timestamp }}"
+  
+  - name: "Accept EULA"
+    ansible.builtin.uri:
+      url: "https://{{ rancher_hostname }}/v1/management.cattle.io.settings/eula-agreed"
+      method: PUT
+      headers:
+        Cookie: "{{ rancher_cookie.cookies_string }}"
+      body_format: json
+      body:
+        id: "eula-agreed"
+        value: "my_timestamp"
+        metadata:
+          name: eula-agreed
+          resourceVersion: "{{ resourceVersion }}"
+      validate_certs: false
+      status_code: 200
+    ignore_errors: true
+    register: accept_eula
+
+  - debug: msg="{{ accept_eula }}"

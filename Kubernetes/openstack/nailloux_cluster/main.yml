@@ -1,0 +1,5 @@
+---
+- name: "Setup nodes"
+  import_playbook: "playbooks/master.yml"
+- name: "Install pacakges"
+  import_playbook: "playbooks/setup.yml"

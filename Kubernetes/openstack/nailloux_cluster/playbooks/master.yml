@@ -39,7 +39,7 @@
   # Get clusterID from raw JSON data, useful to get the token to register nodes
   - name: Extract Cluster ID from Cluster Data
     set_fact:
-      cluster_id: "{{ rancher_cluster_data.json.data | selectattr('name', 'equalto', rancher_cluster_gitlab_name ) | map(attribute='id') | first }}"
+      cluster_id: "{{ rancher_cluster_data.json.data | selectattr('name', 'equalto', rancher_cluster_nailloux_name ) | map(attribute='id') | first }}"
 
   - debug: msg="{{ cluster_id }}"
   
@@ -58,9 +58,9 @@
   # Get clusterID from raw json data
   - name: Extract Cluster ID
     set_fact:
-      token: "{{ rancher_response_register.json.data | selectattr('clusterId', 'equalto', cluster_id ) | map(attribute='token') | first }}"
+      nailloux_token: "{{ rancher_response_register.json.data | selectattr('clusterId', 'equalto', cluster_id ) | map(attribute='token') | first }}"
 
-  - debug: msg="{{ token }}"
+  - debug: msg="{{ nailloux_token }}"
   
   # Output the Rancher CA cert from kubectl secret
   - name: Get Rancher CA certificate from Secret
@@ -90,10 +90,10 @@
 
 #############################
 - name: "Register node"
-  hosts: workers
+  hosts: openstack
   vars_files:
     - "../../global_vars.yml"
-    - "../vars/workers.yml"
+    - "../vars/master.yml"
   environment:
     KUBECONFIG: /etc/rancher/rke2/rke2.yaml
   
@@ -130,11 +130,13 @@
 
   - name: 5. Extract the Registration Command
     set_fact:
-      token: "{{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }}"
+      token: "{{ hostvars[groups['k3s_cluster'][0]]['nailloux_token'] }}"
 
   - name: 5. Extract the Checksum
     set_fact:
       checksum: "{{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }}"
+
+  - debug: msg="curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
 
   # Downloading agent executable
   - name: "Downloading agent"
@@ -145,37 +147,68 @@
       force: true
       validate_certs: false
   
-- name: "Register node"
-  hosts: worker1
-  vars_files:
-    - "../../global_vars.yml"
-    - "../vars/workers.yml"
-  environment:
-    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
-  
-  tasks:
-  
-  - debug: msg="/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --worker --node-name {{ rancher_worker_node_1_name }}"
-  # Deploying RKE2-Server
-  - name: "Execute script to register the node"
-    ansible.builtin.shell:
-      executable: "/usr/bin/bash"
-      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --worker --node-name {{ rancher_worker_node_1_name }}"
-#############################
-- name: "Register node"
-  hosts: worker2
-  vars_files:
-    - "../../global_vars.yml"
-    - "../vars/workers.yml"
-  environment:
-    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
-  
-  tasks:
-
-  - debug: msg="/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --worker --node-name {{ rancher_worker_node_2_name }}"
+  - debug: msg="/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
 
   # Deploying RKE2-Server
   - name: "Execute script to register the node"
     ansible.builtin.shell:
       executable: "/usr/bin/bash"
-      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --worker --node-name {{ rancher_worker_node_2_name }}"
+      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
+
+  - name: Wait for cluster initialization
+    ansible.builtin.pause:
+      minutes: 1
+
+  - name: Wait for Calico Kube Deployment to be available
+    kubernetes.core.k8s_info:
+      kind: Deployment
+      name: calico-kube-controllers
+      namespace: calico-system
+    register: calico_deploy
+    until: calico_deploy.resources[0].status.readyReplicas is defined and calico_deploy.resources[0].status.readyReplicas >= 1
+    retries: 720
+    delay: 5
+  
+  - name: Extract version string
+    set_fact:
+      calico_version: "{{ calico_deploy.resources[0].spec.template.spec.containers[0].image | regex_search('v[0-9]+\\.[0-9]+\\.[0-9]+') }}"
+
+  - name: Debug extracted version
+    debug:
+      msg: "The detected Calico version is {{ calico_version }}"
+
+  - name: "Download Calico executable"
+    ansible.builtin.get_url:
+      dest: "/usr/bin/calico"
+      url: "https://github.com/projectcalico/calico/releases/download/{{ calico_version }}/calicoctl-linux-amd64"
+      mode: '0700'
+  
+  - name: Create script to flush unused but claimed IP
+    ansible.builtin.copy:
+      content: |
+          #!/bin/bash
+          # Set environment so calicoctl can find the cluster
+          export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+          export PATH=$PATH:/usr/local/bin:/var/lib/rancher/rke2/bin
+
+          # 1. Lock (Warning: No new pods can start while locked)
+          calicoctl datastore migrate lock
+
+          # 2. Check and Release
+          calicoctl ipam check -o /tmp/report.json
+          if [ -f /tmp/report.json ]; then
+              calicoctl ipam release --from-report /tmp/report.json
+              rm /tmp/report.json
+          fi
+
+          # 3. Always unlock, even if previous commands failed
+          calicoctl datastore migrate unlock
+      dest: /root/purge.sh
+      mode: '0755'
+
+  - name: Add purge script to crontab if not present
+    ansible.builtin.lineinfile:
+      path: /etc/crontab
+      line: "*/5 * * * * root /root/purge.sh"
+      state: present
+      insertafter: EOF  # Ensures it goes to the bottom of the file

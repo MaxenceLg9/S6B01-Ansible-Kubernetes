@@ -1,0 +1,24 @@
+#############################
+- name: "Update config in DNS Unbound"
+  hosts: dns
+  vars_files:
+    - "../vars/unbound.yml"
+  tasks:
+  - name: "Unbound package"
+    ansible.builtin.apt:
+      name: unbound
+      state: present
+  
+  - name: Write custom config for rancher
+    ansible.builtin.copy:
+      dest: /etc/unbound/unbound.conf.d/rancher.conf
+      content: "{{ unbound_rancher_domain }}"
+
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: "Restart unbound service"
+    ansible.builtin.service:
+      name: unbound
+      state: restarted

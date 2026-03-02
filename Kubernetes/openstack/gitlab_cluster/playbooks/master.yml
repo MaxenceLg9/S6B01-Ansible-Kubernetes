@@ -39,7 +39,7 @@
   # Get clusterID from raw JSON data, useful to get the token to register nodes
   - name: Extract Cluster ID from Cluster Data
     set_fact:
-      cluster_id: "{{ rancher_cluster_data.json.data | selectattr('name', 'equalto', rancher_cluster_nailloux_name ) | map(attribute='id') | first }}"
+      cluster_id: "{{ rancher_cluster_data.json.data | selectattr('name', 'equalto', rancher_cluster_gitlab_name ) | map(attribute='id') | first }}"
 
   - debug: msg="{{ cluster_id }}"
   
@@ -56,11 +56,11 @@
   - debug: msg="{{ rancher_response_register.json.data }}"
 
   # Get clusterID from raw json data
-  - name: Extract Cluster ID
+  - name: Extract Cluster Token
     set_fact:
-      token: "{{ rancher_response_register.json.data | selectattr('clusterId', 'equalto', cluster_id ) | map(attribute='token') | first }}"
+      gitlab_token: "{{ rancher_response_register.json.data | selectattr('clusterId', 'equalto', cluster_id ) | map(attribute='token') | first }}"
 
-  - debug: msg="{{ token }}"
+  - debug: msg="{{ gitlab_token }}"
   
   # Output the Rancher CA cert from kubectl secret
   - name: Get Rancher CA certificate from Secret
@@ -90,7 +90,7 @@
 
 #############################
 - name: "Register node"
-  hosts: openstack
+  hosts: master
   vars_files:
     - "../../global_vars.yml"
     - "../vars/master.yml"
@@ -130,13 +130,13 @@
 
   - name: 5. Extract the Registration Command
     set_fact:
-      token: "{{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }}"
+      token: "{{ hostvars[groups['k3s_cluster'][0]]['gitlab_token'] }}"
 
   - name: 5. Extract the Checksum
     set_fact:
       checksum: "{{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }}"
 
-  - debug: msg="curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --etcd --controlplane --worker --node-name master"
+  - debug: msg="curl --insecure -fL https://rancher.rancher/system-agent-install.sh | sudo  sh -s - --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
 
   # Downloading agent executable
   - name: "Downloading agent"
@@ -147,13 +147,13 @@
       force: true
       validate_certs: false
   
-  - debug: msg="/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }} --ca-checksum {{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
+  - debug: msg="/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
 
   # Deploying RKE2-Server
   - name: "Execute script to register the node"
     ansible.builtin.shell:
       executable: "/usr/bin/bash"
-      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ hostvars[groups['k3s_cluster'][0]]['rancher_response_register']['json']['data'][0]['token'] }} --ca-checksum {{ hostvars[groups['k3s_cluster'][0]]['ca_checksum']['stat']['checksum'] }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
+      cmd: "/tmp/rancher.sh --server https://{{ rancher_hostname }} --label 'cattle.io/os=linux' --token {{ token }} --ca-checksum {{ checksum }} --etcd --controlplane --worker --node-name {{ rancher_master_node_name }}"
 
   - name: Wait for cluster initialization
     ansible.builtin.pause:

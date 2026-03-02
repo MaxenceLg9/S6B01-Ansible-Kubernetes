@@ -93,25 +93,3 @@
         runnerRegistrationToken: "{{ gitlab_runner_token }}"
       values_files:
         - /tmp/gitlab_runner_values.yml
-  
-  - name: Create node port for gitlab SSH
-    kubernetes.core.k8s:
-      name: gitlab-ssh
-      kind: Service
-      namespace: gitlab
-      definition:
-        apiVersion: v1
-        metadata:
-          name: gitlab-ssh
-        spec:
-          selector:
-            app: nginx-ingress
-            component: controller
-            release: gitlab
-          ports:
-            - name: gitlab-ssh
-              nodePort: 32729
-              port: 22
-              protocol: TCP
-              targetPort: gitlab-shell
-          type: NodePort

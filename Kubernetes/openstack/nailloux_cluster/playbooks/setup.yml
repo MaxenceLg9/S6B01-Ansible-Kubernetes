@@ -1,0 +1,26 @@
+##############
+- name: "Setup nodes"
+  hosts: openstack
+  vars_files:
+    - "../../global_vars.yml"
+    - "../vars/setup.yml"
+
+  environment:
+    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+
+  tasks:
+
+  - name: "Install requirements"
+    ansible.builtin.apt:
+      name:
+      - "python3-kubernetes"
+      - "iptables"
+      state: present
+
+  - name: Restart networkd and resolved package
+    ansible.builtin.service:
+      name: "{{ item }}"
+      state: restarted
+    loop:
+      - systemd-networkd
+      - systemd-resolved

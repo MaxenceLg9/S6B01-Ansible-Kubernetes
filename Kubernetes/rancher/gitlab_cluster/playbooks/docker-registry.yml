@@ -1,0 +1,19 @@
+#############################
+- name: "Installing Docker registry with manifests"
+  hosts: master
+  vars_files:
+    - "../vars/docker-registry.yml"
+  environment:
+    KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+  
+  tasks:
+    - name: Clone repo
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ dest_path }}"
+
+    - name: Kubectl Apply Recursive
+      ansible.builtin.shell:
+        cmd: "kubectl apply -R -f {{ dest_path }}"
+      environment:
+        KUBECONFIG: "/etc/rancher/rke2/rke2.yaml"

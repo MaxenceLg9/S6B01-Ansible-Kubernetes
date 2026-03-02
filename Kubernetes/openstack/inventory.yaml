@@ -16,15 +16,19 @@ all:
     # RKE2 Cluster (Workloads)
     gitlab_cluster:
       children:
-        workers:
-          children:
-            worker1:
-              hosts:
-                10.0.1.5:
-            worker2:
-              hosts:
-                10.0.1.10:
+        worker:
+          hosts:
+            10.0.1.5:
 
         master:
           hosts:
             10.0.1.4:
+    
+    nailloux_cluster:
+      children:
+        openstack:
+          hosts:
+            10.192.14.228:
+              ansible_ssh_private_key_file: "../../SSH/openstack.pem"
+              ansible_user: debian
+              ansible_ssh_port: 1222

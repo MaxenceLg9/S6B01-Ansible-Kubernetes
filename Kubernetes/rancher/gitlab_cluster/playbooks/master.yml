@@ -179,7 +179,7 @@
 
   - name: "Download Calico executable"
     ansible.builtin.get_url:
-      dest: "/usr/bin/calico"
+      dest: "/usr/bin/calicoctl"
       url: "https://github.com/projectcalico/calico/releases/download/{{ calico_version }}/calicoctl-linux-amd64"
       mode: '0700'
   

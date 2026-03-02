@@ -1,3 +1,0 @@
----
-- name: "Setup nodes"
-  import_playbook: "playbooks/master.yml"

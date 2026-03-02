@@ -19,13 +19,6 @@
       kind: StorageClass
       name: local-path
       definition:
-        # This overrides the specific part of the deployment from the URL
-        spec:
-          template:
-            spec:
-              nodeSelector:
-                # Use the label that identifies your workers
-                node-role.kubernetes.io/worker1: "true"
         metadata:
           annotations:
             storageclass.kubernetes.io/is-default-class: "true"
